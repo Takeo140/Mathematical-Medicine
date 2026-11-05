@@ -19,10 +19,6 @@ jobs:
           curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
 
-      - name: Set Lean toolchain
-        run: |
-          echo "leanprover/lean4:stable" > lean-toolchain
-
       - name: Setup Lake project
         run: |
           if [ ! -f lakefile.lean ]; then

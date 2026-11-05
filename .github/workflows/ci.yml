@@ -2,43 +2,29 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, master ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, master ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Install elan
+      - name: Install elan (Lean toolchain manager)
         run: |
           curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
 
-      - name: Setup Lake project
-        run: |
-          if [ ! -f lakefile.lean ]; then
-            cat > lakefile.lean <<'EOF'
-          import Lake
-          open Lake DSL
+      - name: Fetch dependencies (lake update)
+        run: lake update
 
-          package mathematical_medicine
-          require mathlib from git "https://github.com/leanprover-community/mathlib4"
-          EOF
-          fi
-          lake update
-
-      - name: Restore mathlib cache
+      - name: Restore Mathlib cache
         run: lake exe cache get
 
-      - name: Compile Lean files
-        run: |
-          for file in *.lean; do
-            [ -f "$file" ] || continue
-            echo "==> Checking $file"
-            lake env lean "$file"
-          done
+      - name: Build project
+        run: lake build

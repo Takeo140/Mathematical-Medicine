@@ -8,32 +8,41 @@ on:
 
 jobs:
   build:
-    name: Lean + mathlib Build
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+
     steps:
       - uses: actions/checkout@v4
 
       - name: Install elan
         run: |
           curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
-          echo "$HOME/.elan/bin" >> $GITHUB_PATH
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
 
-      - name: Setup lakefile
+      - name: Set Lean toolchain
         run: |
-          elan default leanprover/lean4:stable
+          echo "leanprover/lean4:stable" > lean-toolchain
+
+      - name: Setup Lake project
+        run: |
           if [ ! -f lakefile.lean ]; then
-            cat << EOF > lakefile.lean
+            cat > lakefile.lean <<'EOF'
           import Lake
           open Lake DSL
-          package meta_axiom
+
+          package mathematical_medicine
           require mathlib from git "https://github.com/leanprover-community/mathlib4"
-          lean_lib MetaAxioms
           EOF
           fi
           lake update
 
-      - name: Mathlib cache
-        run: lake exe cache get || true
+      - name: Restore mathlib cache
+        run: lake exe cache get
 
-      - name: Build
-        run: lake build
+      - name: Compile Lean files
+        run: |
+          for file in *.lean; do
+            [ -f "$file" ] || continue
+            echo "==> Checking $file"
+            lake env lean "$file"
+          done

@@ -43,6 +43,29 @@ This repository contains a comprehensive suite of formal proofs (`.lean`) and hi
 *   `Plant.lean`: Extension of codon optimization and genome repair logic to plant biology.
 
 ---
+### 🧬 Mathematical Medicine Framework: Four Pillars
+
+The framework is grounded in the Extremum Principle and structured around four fundamental pillars:
+
+1. **Extremum Principle (A1)**
+* Physiological states are determined by the extremization of a governing functional $L(x)$:
+
+$$F[x] = \text{Extremum } L(x)$$
+
+2. **Topological Space (A2)**
+* Biological states $x$ are embedded within a defined topological space $X$:
+
+$$x \in X \subset \mathbb{R}^n$$
+
+3. **Logical Consistency (A3)**
+* The system satisfies strict internal consistency, where constraint errors $C[F]$ vanish identically:
+
+$$C[F] = 0$$
+
+4. **Hierarchical Structure (A4)**
+* Macro-level systemic functions emerge from micro-level dynamics:
+
+$$F_{\text{macro}} = \sum w_i \cdot F_{\text{micro}}^{(i)}$$
 
 ## 🛠️ Getting Started
 

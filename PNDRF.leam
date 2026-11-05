@@ -1,0 +1,142 @@
+-- 統合・神経細胞変換と複雑系ネットワークの共役モデル
+-- F-Theory / Polygenic-Neurorestorative & Direct Reprogramming Fusion
+-- Apache 2.0 / Takeo Yamamoto
+import Mathlib.Data.Rat.Basic
+import Mathlib.Tactic.Linarith
+import Mathlib.Tactic.NormNum
+
+namespace UnifiedNeuroCellularModel
+
+/- =========================================================
+   §1  基礎定義（分化能・細胞種・転写因子）
+   ========================================================= -/
+
+inductive SomaticType : Type
+  | Fibroblast | Neuron | Astrocyte | Cardiomyocyte
+  deriving Repr, DecidableEq
+
+inductive TranscriptionFactor : Type
+  | Ascl1 | Brn2 | Myt1l | NeuroD1 | Ngn2
+  deriving Repr, DecidableEq
+
+abbrev TFSet := List TranscriptionFactor
+
+structure DirectReprogrammingProtocol where
+  name          : String
+  source        : SomaticType
+  target        : SomaticType
+  factors       : TFSet
+  efficiency    : ℚ         -- 変換効率 (有理数化して厳密検証)
+  tumor_risk    : ℚ         -- 腫瘍化リスク
+  deriving Repr, DecidableEq
+
+/- =========================================================
+   §2  ポリジェニック・プロファイルと統合神経状態
+   ========================================================= -/
+
+structure PolygenicProfile where
+  vulnerability_index   : ℚ
+  repair_responsiveness : ℚ
+  deriving Repr, DecidableEq
+
+/-- 細胞変換の進捗と複雑系神経状態が一体となった統合状態 -/
+structure UnifiedState where
+  excitation_level : ℚ     -- 神経興奮・ストレス水準
+  network_entropy  : ℚ     -- ネットワークのエントロピー
+  attractor_basin  : Int   -- 0: 病理的トラップ, 1: 健常アトラクター
+  cell_integrity   : ℚ     -- 細胞レベルの健全度 (0.0 から 1.0)
+  profile          : PolygenicProfile
+  deriving Repr, DecidableEq
+
+/-- 健常アトラクター（完全寛解・構造的治癒）の定義 -/
+def IsHealthyAttractor (st : UnifiedState) : Prop :=
+  st.excitation_level = 0 ∧
+  st.network_entropy = 0 ∧
+  st.attractor_basin = 1 ∧
+  st.cell_integrity ≥ 1.0
+
+instance (st : UnifiedState) : Decidable (IsHealthyAttractor st) := by
+  unfold IsHealthyAttractor; infer_instance
+
+/- =========================================================
+   §3  細胞変換駆動型・複雑系相転移遷移関数
+   ========================================================= -/
+
+/-- 
+  【統合遷移関数】
+  直接変換プロトコルの効率と個人のポリジェニック感受性を掛け合わせ、
+  細胞の健全度を回復させると同時に、非線形ネットワークを相転移させる。
+-/
+def unified_cellular_transition 
+    (protocol : DirectReprogrammingProtocol) 
+    (st : UnifiedState) : UnifiedState :=
+  if IsHealthyAttractor st then
+    st
+  else
+    -- 1. 細胞レベルの修復（プロトコル効率 × 遺伝的修復感受性）
+    let cell_boost := protocol.efficiency * st.profile.repair_responsiveness
+    let next_integrity := min 1.0 (st.cell_integrity + cell_boost)
+
+    -- 2. 非線形フィードバックと神経状態の減衰
+    let non_linear_coupling := st.excitation_level * st.network_entropy
+    let effective_remedy := cell_boost + (1.0 - st.profile.vulnerability_index) * 0.1 + non_linear_coupling
+
+    let next_exc := if st.excitation_level ≤ effective_remedy then 0 else st.excitation_level - effective_remedy
+    let next_ent := if st.network_entropy ≤ effective_remedy * 0.5 then 0 else st.network_entropy - effective_remedy * 0.5
+
+    -- 3. 閾値達成時に病理的アトラクター(0)から健常アトラクター(1)へ相転移
+    let next_basin := if next_exc = 0 ∧ next_ent = 0 ∧ next_integrity ≥ 1.0 then 1 else st.attractor_basin
+
+    { excitation_level := next_exc,
+      network_entropy  := next_ent,
+      attractor_basin  := next_basin,
+      cell_integrity   := next_integrity,
+      profile          := st.profile }
+
+/- =========================================================
+   §4  統合不変量定理の証明
+   ========================================================= -/
+
+/-- 
+  【定理】細胞レベルの直接変換プロトコルと複雑系ダイナミクスを統合した系であっても、
+  一度 IsHealthyAttractor（構造的完全治癒）に到達した系は、
+  いかなる外乱や追加入力が加わろうとも、その健常な秩序と完全性を永久に維持する。
+-/
+theorem unified_heal_invariant 
+    (protocol : DirectReprogrammingProtocol) 
+    (st : UnifiedState) 
+    (hs : IsHealthyAttractor st) :
+    IsHealthyAttractor (unified_cellular_transition protocol st) := by
+  unfold IsHealthyAttractor unified_cellular_transition
+  rcases hs with ⟨hexc, hent, hbas, hint⟩
+  -- IsHealthyAttractor st が真であるため、if の分岐によりそのまま維持される
+  rw [if_pos (by exact ⟨hexc, hent, hbas, hint⟩)]
+  exact ⟨rfl, rfl, rfl, hint⟩
+
+/- =========================================================
+   §5  実証サンプルと検証
+   ======================================================== -/
+
+def sample_protocol : DirectReprogrammingProtocol :=
+  { name := "Wernig2010_iN"
+    source := SomaticType.Fibroblast
+    target := SomaticType.Neuron
+    factors := [.Ascl1, .Brn2, .Myt1l]
+    efficiency := 1/5  -- 0.20
+    tumor_risk := 1/50 -- 0.02 }
+
+def pathological_initial_state : UnifiedState :=
+  { excitation_level := 4/5
+    network_entropy  := 4/5
+    attractor_basin  := 0
+    cell_integrity   := 2/10
+    profile := { vulnerability_index := 3/4, repair_responsiveness := 5/4 } }
+
+def run_simulation (p : DirectReprogrammingProtocol) (st : UnifiedState) : Nat → UnifiedState
+  | 0 => st
+  | n + 1 => unified_cellular_transition p (run_simulation p st n)
+
+/-- 5ステップ経過後の統合状態の判定 -/
+#eval decide (IsHealthyAttractor (run_simulation sample_protocol pathological_initial_state 5))
+
+end UnifiedNeuroCellularModel

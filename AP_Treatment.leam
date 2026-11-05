@@ -1,0 +1,139 @@
+-- License Apache-2.0 Takeo Yamamoto
+import Mathlib.Data.Rat.Basic
+import Mathlib.Tactic.Linarith
+import Mathlib.Tactic.NormNum
+
+namespace AdvancedPsychiatricTreatmentModel
+
+/- =========================================================
+   §1  拡張された精神・神経状態と病理フェーズの定義
+   ========================================================= -/
+
+/-- 神経修復因子および分子ターゲット -/
+inductive MolecularFactor : Type
+  | BDNF
+  | NeurogenesisFactor
+  | SynapticPlasticityRegulator
+  | InflammationInhibitor
+  deriving Repr, DecidableEq, BEq
+
+/-- 脳の神経回路網の状態表現 -/
+structure NeuralNetworkState where
+  symptom_load     : ℚ  -- 病理・症状負荷 (0: 完全寛解, ≧1: 重度病理)
+  plasticity_state : ℚ  -- 神経可塑性・柔軟性 (0: 固着・硬化, 1: 正常な可塑性)
+  inflammation_lvl : ℚ  -- 神経炎症・ストレス負荷 (0: 正常, ≧1: 慢性炎症)
+  deriving Repr, DecidableEq
+
+/-- 治療・神経修復プロトコル（Blueprint） -/
+structure PrecisionBlueprint where
+  factors       : List MolecularFactor
+  dosage_potency: ℚ  -- 介入の物理的・薬理学的強度
+  precision_rate: ℚ  -- 標的特異性 (0 から 1)
+  deriving Repr, DecidableEq
+
+/-- 完全治癒（True Remission / 構造的寛解）の厳密な定義述語
+    症状がなく、可塑性が十分に確保され、かつ炎症・ストレス負荷が完全にゼロである状態。 -/
+def IsTrueRemission (st : NeuralNetworkState) : Prop :=
+  st.symptom_load = 0 ∧
+  st.plasticity_state ≥ 1 ∧
+  st.inflammation_lvl = 0
+
+instance (st : NeuralNetworkState) : Decidable (IsTrueRemission st) := by
+  unfold IsTrueRemission; infer_instance
+
+/- =========================================================
+   §2  安全核（Safety Kernel）とリミッター
+   ========================================================= -/
+
+def safety_bound_check (val : ℚ) : ℚ :=
+  if val > 5 then 5
+  else if val < -5 then -5
+  else val
+
+theorem safety_bound_fixed (v : ℚ) : -5 ≤ safety_bound_check v ∧ safety_bound_check v ≤ 5 := by
+  unfold safety_bound_check
+  split_ifs with h1 h2
+  · exact ⟨by linarith, by linarith⟩
+  · exact ⟨by linarith, by linarith⟩
+  · exact ⟨by linarith, by linarith⟩
+
+/- =========================================================
+   §3  高度・非線形神経状態遷移関数（完全治癒への収束プロトコル）
+   ========================================================= -/
+
+/-- 
+  【神経状態遷移関数】
+  プレシジョン・ブループリントの介入に基づき、病理的アトラクターを破壊し、
+  神経可塑性を高めながら、最終的に True Remission（完全治癒）へと収束させる。
+-/
+def advanced_psych_transition (bp : PrecisionBlueprint) (st : NeuralNetworkState) : NeuralNetworkState :=
+  if IsTrueRemission st then
+    -- 既に完全治癒に達している場合は、その恒常性を完全に維持する
+    { symptom_load := 0, plasticity_index := 1, inflammation_lvl := 0 }
+  else
+    -- 介入強度と因子数に応じた修復レートの算出
+    let therapeutic_power := bp.dosage_potency * bp.precision_rate
+    let factor_bonus := if bp.factors.length ≥ 3 then (1 / 10 : ℚ) else (1 / 20 : ℚ)
+    let net_recovery := therapeutic_power + factor_bonus
+
+    -- 症状負荷の低減（0未満にはならない）
+    let next_symptom := if st.symptom_load ≤ net_recovery then 0 else st.symptom_load - net_recovery
+    
+    -- 神経可塑性の回復（1を上限とする）
+    let next_plasticity := if st.plasticity_state + net_recovery ≥ 1 then 1 else st.plasticity_state + net_recovery
+    
+    -- 炎症・ストレス負荷の消去
+    let next_inflammation := if st.inflammation_lvl ≤ net_recovery then 0 else st.inflammation_lvl - net_recovery
+
+    { symptom_load     := next_symptom,
+      plasticity_state := next_plasticity,
+      inflammation_lvl := next_inflammation }
+
+/- =========================================================
+   §4  完全治癒の不変量証明（Invariant Theorem）
+   ========================================================= -/
+
+/-- 
+  【定理】一度 True Remission（完全治癒）に到達した神経系は、
+  いかなる高度な PrecisionBlueprint が作用しても、その健康な恒常性を永久に逸脱しない。
+-/
+theorem true_remission_is_invariant (bp : PrecisionBlueprint) (st : NeuralNetworkState) (hs : IsTrueRemission st) :
+    IsTrueRemission (advanced_psych_transition bp st) := by
+  unfold IsTrueRemission advanced_psych_transition
+  rcases hs with ⟨hsym, hplas, hinf⟩
+  -- IsTrueRemission st が真であるため、if の分岐（true側）が選択される
+  have h_cond : (if st.symptom_load = 0 ∧ st.plasticity_state ≥ 1 ∧ st.inflammation_lvl = 0 then true else false) = true := by
+    simp [hsym, hplas, hinf]
+  -- if の条件が成立することを証明し、分岐を解消する
+  rw [if_pos (by exact ⟨hsym, hplas, hinf⟩)]
+  exact ⟨rfl, by norm_num, rfl⟩
+
+/- =========================================================
+   §5  シミュレーション検証
+   ========================================================= -/
+
+def optimal_blueprint : PrecisionBlueprint :=
+  { factors        := [MolecularFactor.BDNF, MolecularFactor.NeurogenesisFactor, MolecularFactor.SynapticPlasticityRegulator, MolecularFactor.InflammationInhibitor]
+    dosage_potency := 0.25
+    precision_rate := 0.95 }
+
+def severe_pathology_state : NeuralNetworkState :=
+  { symptom_load     := 0.95
+    plasticity_state := 0.05
+    inflammation_lvl := 0.80 }
+
+-- 階層的遷移の追跡 (ステップごとの評価)
+def run_simulation (bp : PrecisionBlueprint) (st : NeuralNetworkState) : Nat → NeuralNetworkState
+  | 0 => st
+  | n + 1 => advanced_psych_transition bp (run_simulation bp st n)
+
+/-- 4ステップ経過後の状態評価 -/
+#eval run_simulation optimal_blueprint severe_pathology_state 4
+
+/-- 6ステップ経過後の状態評価（完全治癒・True Remission 到達） -/
+#eval run_simulation optimal_blueprint severe_pathology_state 6
+
+/-- 6ステップ後の状態が True Remission を満たしているかの静的判定 -/
+#eval decide (IsTrueRemission (run_simulation optimal_blueprint severe_pathology_state 6))
+
+end AdvancedPsychiatricTreatmentModel

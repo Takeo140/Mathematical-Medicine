@@ -9,17 +9,34 @@ inductive RNA where
 
 /-- 2. アミノ酸定義（ターゲット） -/
 inductive AminoAcid where
-  | Phe | Leu | Ile | Met | Val | Ser | Pro | Thr | Ala | Tyr | His | Gln
-  | Asn | Lys | Asp | Glu | Cys | Trp | Arg | Gly | Stop
+  | Ala | Arg | Asn | Asp | Cys | Gln | Glu | Gly | His | Ile | Leu | Lys | Met | Phe | Pro | Ser | Thr | Trp | Tyr | Val | Stop
   deriving Repr, DecidableEq
 
-/-- 3. コドン最適化テーブル（ヒト細胞用） -/
+/-- 3. コドン最適化テーブル（ヒト細胞用）
+    1つのアミノ酸に対して、翻訳効率や安定性を重視した代表的なコドンを割り当てる。
+-/
 def optimal_codon : AminoAcid → RNA × RNA × RNA
-  | .Phe  => (.U, .U, .C)
-  | .Leu  => (.C, .U, .G)
-  | .Gly  => (.G, .G, .C)
-  | .Stop => (.U, .G, .A)
-  | _     => (.G, .C, .C)
+  | .Ala => (.G, .C, .U)
+  | .Arg => (.C, .G, .U)
+  | .Asn => (.A, .A, .U)
+  | .Asp => (.G, .A, .U)
+  | .Cys => (.U, .G, .U)
+  | .Gln => (.C, .A, .A)
+  | .Glu => (.G, .A, .A)
+  | .Gly => (.G, .G, .U)
+  | .His => (.C, .A, .U)
+  | .Ile => (.A, .U, .U)
+  | .Leu => (.C, .U, .U)
+  | .Lys => (.A, .A, .A)
+  | .Met => (.A, .U, .G)
+  | .Phe => (.U, .U, .U)
+  | .Pro => (.C, .C, .U)
+  | .Ser => (.U, .C, .U)
+  | .Thr => (.A, .C, .U)
+  | .Trp => (.U, .G, .G)
+  | .Tyr => (.U, .A, .U)
+  | .Val => (.G, .U, .U)
+  | .Stop => (.U, .A, .A)
 
 /-- 4. アミノ酸配列からmRNA配列への変換 -/
 def generate_mrna (protein : List AminoAcid) : List RNA :=

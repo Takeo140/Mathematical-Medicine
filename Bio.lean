@@ -4,12 +4,12 @@ import Mathlib.Tactic.Ring
 
 /-!
   # 生物学的動的平衡理論 (Biological Dynamic Equilibrium)
-  
+
   Licensed under Apache 2.0 (Author: Takeo Yamamoto / 山本健夫)
-  
+
   生命の本質は、静的な構造維持ではなく、絶え間ない「分解」と「合成」の
   流動のなかで一定の状態を保つ『動的平衡（Dynamic Equilibrium）』である。
-  
+
   本コードは、生体を構成する分子ストックが常に新生（合成）され、
   同時に陳腐化（分解）されながらも、システム全体として生命の恒常性（ホメオスタシス）
   を維持する数理動態を型システム上で完全証明する。
@@ -17,7 +17,7 @@ import Mathlib.Tactic.Ring
 
 namespace BiologicalEquilibrium
 
-/-- 
+/--
   生体システム（Organism）の内部状態
   - `X`  : 現在の生体構成分子ストックの総量（タンパク質など）
   - `α`  : 分解率（絶え間なく自己破壊される速度、エントロピー増大への傾き）
@@ -31,7 +31,7 @@ structure Organism where
   α_bounds : 0 < α ∧ α < 1
   S_pos : 0 < S
 
-/-- 
+/--
   シェーンハイマーの生命遷移関数（流動方程式）
   次の一歩における生命の状態は、現在のストックから「自己分解（α * X）」を引き算し、
   そこに新たな「自己合成（S）」を足し合わせたものになる。
@@ -39,7 +39,7 @@ structure Organism where
 def next_organic_state (org : Organism) : ℝ :=
   org.X - (org.α * org.X) + org.S
 
-/-- 
+/--
   動的平衡（Dynamic Equilibrium）の定義
   「入る流れ（合成）」と「出る流れ（分解）」が完全に平衝し、
   見た目の構造（X）に変化がないように見えるが、内部の分子は100%入れ替わっている状態。
@@ -47,22 +47,19 @@ def next_organic_state (org : Organism) : ℝ :=
 def IsDynamicEquilibrium (org : Organism) : Prop :=
   org.S = org.α * org.X
 
-/-- 
+/--
   【定理：動的平衡の維持とホメオスタシス】
   生体システムが「分解の速度（α * X）」をぴったり補うだけの「合成の流動（S）」
   を維持している（IsDynamicEquilibrium）ならば、次の一歩における生体ストックは
   寸分違わず現在の状態を維持（next_organic_state = X）することを完全証明する。
-  
+
   言葉のレトリックを排し、生命の本質が「物質の固定」ではなく
   「流れが創り出す定常パターン」であることを型システムが承認する。
 -/
 theorem dynamic_equilibrium_preserves_state (org : Organism) (hEq : IsDynamicEquilibrium org) :
     next_organic_state org = org.X := by
   dsimp [next_organic_state]
-  -- 動的平衡の条件（S = α * X）を代入
-  dsimp [IsDynamicEquilibrium] at hEq
   rw [hEq]
-  -- X - α * X + α * X = X
   ring
 
 /--
@@ -75,5 +72,11 @@ theorem non_equilibrium_decay (org : Organism) (h_no_input : org.S < org.α * or
     next_organic_state org < org.X := by
   dsimp [next_organic_state]
   linarith
+
+/-- 動的平衡の理論を、より明示的な形で再利用可能にする補助定理 -/
+lemma dynamic_equilibrium_preserves_state' (org : Organism) (hEq : IsDynamicEquilibrium org) :
+    org.X - (org.α * org.X) + org.S = org.X := by
+  rw [hEq]
+  ring
 
 end BiologicalEquilibrium

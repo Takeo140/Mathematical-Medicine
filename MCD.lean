@@ -30,18 +30,13 @@ theorem approval_logic
     (standard : SafetyStandard)
     (before after : SystemHealth)
     (h  : is_safe_and_effective standard before after)
-    (hb : before.qt_val ≤ standard.max_qt_interval) :   -- ← 追加：必須仮定
+    (hb : before.qt_val ≤ standard.max_qt_interval) :
     after.qt_val ≤ standard.max_qt_interval := by
-  obtain ⟨_, h_nc⟩ := h
-  unfold is_conflicting at h_nc
-  -- ¬(P ∨ Q) → (P → ⊥) ∧ (Q → ⊥) の形に変換
-  push_neg at h_nc
-  obtain ⟨h_qt, _⟩ := h_nc
-  -- h_qt : after.qt_val > max_qt_interval → ¬(before.qt_val ≤ max_qt_interval)
   by_contra h_contra
-  push_neg at h_contra
-  -- h_contra : after.qt_val > max_qt_interval → h_qt が hb を否定 → 矛盾
-  exact absurd hb (h_qt h_contra)
+  have h_gt : after.qt_val > standard.max_qt_interval := lt_of_not_ge h_contra
+  exact h.2 <| by
+    left
+    exact ⟨h_gt, hb⟩
 
 def test_anti_cancer_patch (before : SystemHealth) : SystemHealth :=
   { qt_val            := before.qt_val + 0.05,
@@ -55,6 +50,6 @@ example :
     is_conflicting std b a := by
   simp [is_conflicting, test_anti_cancer_patch]
   left
-  constructor <;> norm_num   -- 0.45 > 0.44 かつ 0.40 ≤ 0.44 を数値計算で解決
+  constructor <;> norm_num
 
 end MetaConflictDetector
